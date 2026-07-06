@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local environment & secrets
+.env
+.env.*
+!.env.example
+# Project info / live credentials — local reference only, NEVER commit.
+PROJECT-INFO.md
+
+# The original local SQLite DB holds student PII — never commit it. Keep it
+# locally only long enough to run scripts/migrate_sqlite_to_pg.py.
+admissions.db
+*.sqlite
+*.sqlite3
+
+# Admissions spreadsheets (raw + cleaned) hold student PII — never commit them.
+# Also covers Excel's temporary lock files (~$*.xlsx).
+*.xlsx
+*.xls
+~$*
+
+# Local DB backups (scripts/merge_jr_sheet.py etc.) hold student PII — never commit.
+backup-*.json
+# Pre-change snapshots written by the one-time scripts/ data-fix scripts
+# (_status_backup_*, _hostel_backup_*, _course_backup_* …) all hold PII.
+scripts/_*backup*.csv
+# Stray admissions exports (the arrivals CSV etc.) hold student PII.
+admissions_ledger*.csv
+
+# Local Claude Code settings
+.claude/
+
+# macOS
+.DS_Store
+
+# Vercel
+.vercel/

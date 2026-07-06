@@ -1,0 +1,4 @@
+# Backend dependencies. Vercel auto-installs these; also used for local dev
+# (python3 server.py). Postgres-only — DATABASE_URL is required at runtime.
+Flask>=3.0.0
+psycopg[binary,pool]>=3.1.0

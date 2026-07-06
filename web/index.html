@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admissions Ledger</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <meta name="theme-color" content="#14141a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=64" />
+</head>
+<body>
+  <div id="root"></div>
+  <div id="toasts" role="status" aria-live="polite"></div>
+
+  <!-- Public-demo notice: this repository/deployment is an example instance
+       seeded with fictional data. The real system runs in production for an
+       educational institution serving 2,000–3,000 students. -->
+  <div class="demo-ribbon" role="note">
+    <b>Public demo</b> — all names and records are fictional sample data.
+    The production deployment of this system serves an educational institution
+    with 2,000–3,000 students.
+  </div>
+
+  <!-- Plain classic scripts sharing one global scope, so LOAD ORDER MATTERS:
+       foundations first, screens next, boot.js last (it starts the app). -->
+  <script src="js/icons.js?v=51"></script>
+  <script src="js/api.js?v=46"></script>
+  <script src="js/state.js?v=48"></script>
+
+  <script src="js/ui/dom.js?v=47"></script>
+  <script src="js/ui/xlsx.js?v=46"></script>
+  <script src="js/ui/toast.js?v=46"></script>
+  <script src="js/ui/shared.js?v=48"></script>
+  <script src="js/ui/modal.js?v=46"></script>
+  <script src="js/ui/shell.js?v=51"></script>
+
+  <script src="js/screens/login.js?v=46"></script>
+  <script src="js/screens/home.js?v=56"></script>
+  <script src="js/screens/students.js?v=57"></script>
+  <script src="js/screens/students-actions.js?v=49"></script>
+  <script src="js/screens/averages.js?v=55"></script>
+  <script src="js/screens/expenditure.js?v=70"></script>
+  <script src="js/screens/income.js?v=2"></script>
+  <script src="js/screens/org.js?v=53"></script>
+  <script src="js/screens/users.js?v=49"></script>
+  <script src="js/screens/roles.js?v=46"></script>
+  <script src="js/screens/audit-log.js?v=46"></script>
+
+  <script src="js/boot.js?v=46"></script>
+</body>
+</html>
