@@ -25,9 +25,9 @@ function renderLogin() {
           <div id="err" class="error-msg" role="alert"></div>
           <button id="go" class="btn btn-primary btn-block">Sign in</button>
           <div class="demo-creds">
-            <b>Demo sign-ins</b> (fictional data)<br/>
-            Admin: <code>admin</code> / <code>Demo@1234</code> &nbsp;·&nbsp;
-            Viewer: <code>viewer</code> / <code>Demo@1234</code>
+            <b>Public demo — read-only</b> (fictional data)<br/>
+            Viewer (view only): <code>viewer</code> / <code>Demo@1234</code><br/>
+            Contact the administrator for a full-access demo.
           </div>
           <div id="loginHelp" class="infobox" style="display:none">
             ${icon('info', 16)}

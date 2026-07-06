@@ -254,7 +254,7 @@ function avHeat(avg, bench) {
   const d = (avg - bench) / bench;
   if (Math.abs(d) < 0.012) return '';
   const a = (Math.min(1, Math.abs(d) / 0.25) * 0.16).toFixed(3);
-  return d > 0 ? `background:rgba(20,20,26,${a})` : `background:rgba(96,110,170,${a})`;
+  return d > 0 ? `background:rgba(20,20,26,${a})` : `background:rgba(120,120,128,${a})`;
 }
 // A small up/down marker comparing a cell's average to its column benchmark.
 function avDelta(avg, bench) {
