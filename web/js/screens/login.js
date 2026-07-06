@@ -34,7 +34,6 @@ function renderLogin() {
             <div><b>Forgot your password?</b><br/>
               Contact your administrator — they can reset it for you.</div>
           </div>
-          <div class="login-foot">${icon('shield', 14)}<span>Secured area — authorized staff only</span></div>
         </div>
       </div>
     </div>`;
