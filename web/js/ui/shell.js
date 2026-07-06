@@ -121,17 +121,6 @@ function openProfile() {
     </div>
     <div class="divider"></div>
     ${isAdmin ? `<button class="btn btn-ghost btn-block" id="editProfile">${icon('edit', 16)}<span>Edit name</span></button>` : ''}
-    <button class="btn btn-ghost btn-block" id="showPw" style="margin-top:10px">${icon('lock', 16)}<span>Change password</span></button>
-    <div id="pwSection" style="display:none;margin-top:14px">
-      <label class="field">Current password</label>
-      ${pwInput('pCur', 'Your current password')}
-      <label class="field" style="margin-top:12px">New password</label>
-      ${pwInput('pNew', 'min. 8 characters')}
-      <label class="field" style="margin-top:12px">Confirm new password</label>
-      ${pwInput('pCon', 'Re-type new password')}
-      <div id="pMsg" class="error-msg"></div>
-      <button class="btn btn-primary btn-block" id="pwSave">Update password</button>
-    </div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="btn btn-ghost" id="mClose">Close</button>
     </div></div>`;
@@ -159,23 +148,6 @@ function openProfile() {
         const av = $('.user-card .avatar'); if (av) av.textContent = initials(r.user.full_name);
         toast('Profile updated'); render();
       } else { msg.textContent = r.message; }
-    };
-    ov.querySelector('#showPw').onclick = () => {
-      ov.querySelector('#pwSection').style.display = 'block';
-      ov.querySelector('#showPw').style.display = 'none';
-      ov.querySelector('#pCur').focus();
-    };
-    ov.querySelector('#pwSave').onclick = async () => {
-      const cur = ov.querySelector('#pCur').value;
-      const nw = ov.querySelector('#pNew').value;
-      const cf = ov.querySelector('#pCon').value;
-      const msg = ov.querySelector('#pMsg');
-      if (!cur || !nw) { msg.textContent = 'Fill in all fields.'; return; }
-      if (nw.length < 8) { msg.textContent = 'New password must be at least 8 characters.'; return; }
-      if (nw !== cf) { msg.textContent = 'New passwords do not match.'; return; }
-      const r = await api().change_my_password(cur, nw);
-      if (r.ok) { done(); toast('Password updated'); }
-      else { msg.textContent = r.message; }
     };
   }
 

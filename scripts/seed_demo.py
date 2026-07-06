@@ -16,15 +16,19 @@ have data to show.
 Usage (point DATABASE_URL at an EMPTY Postgres database):
     DATABASE_URL="postgresql://..." python3 scripts/seed_demo.py
 
-Demo credentials created (also shown on the login screen):
-    admin / Demo@1234           (full access)
-    editor / Demo@1234          (can edit students)
-    editor.northvale / Demo@1234 (city-bound to NORTHVALE)
-    viewer / Demo@1234          (read-only)
+Demo credentials created:
+    Public (shown on the login screen):
+        viewer / Demo@1234          (read-only everywhere)
+    Privileged (NEVER published — this is a public repo, so every account that
+    can EDIT data gets a private password): set DEMO_ADMIN_PASSWORD (and
+    optionally DEMO_ADMIN_USERNAME) in the environment before seeding, or the
+    script generates a random password and prints it once at the end.
 """
 
+import itertools
 import os
 import random
+import secrets
 import sys
 from datetime import timedelta
 
@@ -37,7 +41,13 @@ from app.config import STATUSES    # noqa: E402
 
 random.seed(7)
 
-PASSWORD = "Demo@1234"
+# Read-only viewer — the ONLY credential published on the login screen/README.
+VIEWER_PASSWORD = "Demo@1234"
+
+# Accounts that can EDIT data (admin + editors) get a PRIVATE password: this
+# repo is public, so a hard-coded value here would hand write access to anyone.
+ADMIN_USERNAME = os.environ.get("DEMO_ADMIN_USERNAME", "ledger.admin").strip()
+ADMIN_PASSWORD = os.environ.get("DEMO_ADMIN_PASSWORD") or secrets.token_urlsafe(12)
 
 FIRST = ["Aarav", "Vihaan", "Ishaan", "Rohan", "Aditya", "Nikhil", "Karthik",
          "Rahul", "Varun", "Tejas", "Manish", "Praveen", "Vamsi", "Harsha",
@@ -45,10 +55,17 @@ FIRST = ["Aarav", "Vihaan", "Ishaan", "Rohan", "Aditya", "Nikhil", "Karthik",
          "Sanjana", "Lakshmi", "Pooja", "Nandini", "Swathi", "Keerthi",
          "Anjali", "Bhavana", "Chandana", "Deepika", "Gowri", "Hansika",
          "Jaswanth", "Kiran", "Lokesh", "Mounika", "Nithya", "Pranav",
-         "Ritika", "Sahithi", "Tanvi", "Uday", "Vaishnavi", "Yashwanth"]
+         "Ritika", "Sahithi", "Tanvi", "Uday", "Vaishnavi", "Yashwanth",
+         "Advait", "Akhila", "Amrutha", "Arnav", "Bhavesh", "Charan",
+         "Darshan", "Esha", "Gautham", "Hemanth", "Jahnavi", "Kalyani",
+         "Lavanya", "Madhav", "Omkar"]
 LAST = ["Rao", "Reddy", "Sharma", "Varma", "Naidu", "Iyer", "Menon", "Gupta",
         "Patel", "Chowdary", "Kumar", "Prasad", "Murthy", "Sastry", "Pillai",
-        "Nair", "Joshi", "Kulkarni", "Deshmukh", "Bhat"]
+        "Nair", "Joshi", "Kulkarni", "Deshmukh", "Bhat",
+        "Agarwal", "Banerjee", "Bhandari", "Chauhan", "Desai", "Dutta",
+        "Ghosh", "Hegde", "Jain", "Kamath", "Kapoor", "Khanna", "Mishra",
+        "Pandey", "Rathore", "Saxena", "Shetty", "Sinha", "Tripathi",
+        "Trivedi", "Verma"]
 FATHER_FIRST = ["Ramesh", "Suresh", "Mahesh", "Rajesh", "Ganesh", "Prakash",
                 "Srinivas", "Venkatesh", "Mohan", "Krishna", "Ravindra",
                 "Narayana", "Sudhakar", "Chandra", "Bhaskar"]
@@ -77,8 +94,14 @@ AGMS = [
 EXECS_PER_AGM = (3, 5)
 
 
-def fake_name():
-    return f"{random.choice(FIRST)} {random.choice(LAST)}"
+# Every applicant/exec draws from one shuffled pool of all FIRST x LAST
+# combinations, so no two generated people ever share a name.
+_NAME_POOL = [f"{f} {l}" for f, l in itertools.product(FIRST, LAST)]
+random.shuffle(_NAME_POOL)
+
+
+def unique_name():
+    return _NAME_POOL.pop()
 
 
 def fake_phone():
@@ -93,19 +116,28 @@ def main():
     if not os.environ.get("DATABASE_URL"):
         sys.exit("Set DATABASE_URL to an EMPTY demo Postgres database first.")
 
+    if security.password_too_short(ADMIN_PASSWORD):
+        sys.exit("DEMO_ADMIN_PASSWORD must be at least "
+                 f"{security.MIN_PASSWORD_LEN} characters.")
+    if not ADMIN_USERNAME or ADMIN_USERNAME == "viewer":
+        sys.exit("DEMO_ADMIN_USERNAME must be a non-empty name other than 'viewer'.")
+
     print("Initialising schema ...")
     init_db()
-    pw_hash = security.hash_password(PASSWORD)
+    viewer_hash = security.hash_password(VIEWER_PASSWORD)
+    admin_hash = security.hash_password(ADMIN_PASSWORD)
 
     with db.connect() as conn:
-        seed(conn, pw_hash)
+        seed(conn, viewer_hash, admin_hash)
         conn.commit()
 
     print("Demo data seeded.")
-    print(f"  Sign in: admin / {PASSWORD} (also editor / editor.northvale / viewer)")
+    print(f"  Public sign-in (read-only): viewer / {VIEWER_PASSWORD}")
+    print(f"  Administrator (KEEP PRIVATE): {ADMIN_USERNAME} / {ADMIN_PASSWORD}")
+    print("  (editor / editor.northvale share the administrator password)")
 
 
-def seed(conn, pw_hash):
+def seed(conn, viewer_hash, admin_hash):
     now = db.now()
 
     conn.execute(
@@ -138,18 +170,24 @@ def seed(conn, pw_hash):
                 (campus_ids[campus], course, now))
 
     # ---- Users: admin + editor + city-bound editor + viewer -----------------
-    conn.execute("UPDATE users SET password_hash = ? WHERE username = 'admin'",
-                 (pw_hash,))
-    users = [("editor", "Meghana Kulkarni", "editor"),
-             ("editor.northvale", "Sameer Joshi", "editor"),
-             ("viewer", "Anita Bhat", "viewer")]
-    for username, full, role in users:
+    # Rename the first-run 'admin' account and give every edit-capable account
+    # the private password; only the read-only viewer gets the published one.
+    conn.execute("UPDATE users SET username = ?, password_hash = ? "
+                 "WHERE username IN ('admin', ?)",
+                 (ADMIN_USERNAME, admin_hash, ADMIN_USERNAME))
+    users = [("editor", "Meghana Kulkarni", "editor", admin_hash),
+             ("editor.northvale", "Sameer Joshi", "editor", admin_hash),
+             ("viewer", "Anita Bhat", "viewer", viewer_hash)]
+    for username, full, role, phash in users:
         if not conn.execute("SELECT 1 FROM users WHERE username = ?",
                             (username,)).fetchone():
             conn.execute(
                 "INSERT INTO users (username, full_name, role, password_hash, "
                 "created_at) VALUES (?, ?, ?, ?, ?)",
-                (username, full, role, pw_hash, now))
+                (username, full, role, phash, now))
+        else:
+            conn.execute("UPDATE users SET password_hash = ? WHERE username = ?",
+                         (phash, username))
     bound = conn.execute("SELECT id FROM users WHERE username = 'editor.northvale'"
                          ).fetchone()
     conn.execute(
@@ -157,12 +195,13 @@ def seed(conn, pw_hash):
         "ON CONFLICT (user_id, city_id) DO NOTHING",
         (bound["id"], city_ids["NORTHVALE"]))
 
-    admin = conn.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
+    admin = conn.execute("SELECT id FROM users WHERE username = ?",
+                         (ADMIN_USERNAME,)).fetchone()
     conn.execute(
         "INSERT INTO password_changes (target_user_id, target_name, "
         "target_username, actor_user_id, actor_name, actor_username, kind, "
         "created_at) VALUES (?, 'Anita Bhat', 'viewer', ?, 'Administrator', "
-        "'admin', 'reset', ?)", (bound["id"], admin["id"], now))
+        "?, 'reset', ?)", (bound["id"], admin["id"], ADMIN_USERNAME, now))
 
     # ---- AGM teams + marketing execs (full cost breakdown) ------------------
     agm_execs = {}     # agm name -> [exec names]
@@ -174,7 +213,7 @@ def seed(conn, pw_hash):
                      "WHERE id = ?", (city_ids[city], is_field, rent, agm_id))
         agm_execs[name] = []
         for _ in range(random.randint(*EXECS_PER_AGM)):
-            ename = fake_name().upper()
+            ename = unique_name().upper()
             gen_exp = random.randrange(3000, 9000, 500)
             incentive = random.randrange(0, 12000, 1000)
             gift = random.randrange(0, 4000, 500)
@@ -223,7 +262,7 @@ def seed(conn, pw_hash):
         agm = random.choice(agms_by_city[campus_by_city[campus]])
         exec_name = random.choice(agm_execs[agm])
         course = random.choice(CAMPUS_COURSES[campus])
-        name = fake_name().upper()
+        name = unique_name().upper()
         reported = (day(random.randint(0, 45))
                     if status in ("REPORTED", "SETTLED") else None)
         fee = (random.randrange(45000, 86000, 500)
@@ -246,7 +285,7 @@ def seed(conn, pw_hash):
         "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", rows)
 
     # ---- Activity + login logs ----------------------------------------------
-    log_users = [("admin", "Administrator", "admin"),
+    log_users = [(ADMIN_USERNAME, "Administrator", "admin"),
                  ("editor", "Meghana Kulkarni", "editor"),
                  ("editor.northvale", "Sameer Joshi", "editor")]
     edits = [("students", "student_update", "Updated an admission"),

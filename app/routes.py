@@ -186,7 +186,7 @@ def call_api(method):
     # A fresh login — or an action that may have changed the caller's OWN
     # password (so their fingerprint must follow it) — re-stamps the session.
     if (bridge.user and isinstance(result, dict) and result.get("ok")
-            and method in ("login", "change_my_password", "users_update")):
+            and method in ("login", "users_update")):
         try:
             _stamp_session(bridge.user["id"])
         except Exception:

@@ -63,8 +63,10 @@ docker exec demo-pg psql -U postgres -c "CREATE DATABASE ledger_demo;"
 pip install -r requirements.txt
 
 # create schema + fictional sample data (1,500 applicants, 3 cities,
-# 5 recruiting teams with full cost breakdowns)
+# 5 recruiting teams with full cost breakdowns). DEMO_ADMIN_PASSWORD is
+# optional — omit it and a random one is generated and printed once.
 DATABASE_URL="postgresql://postgres:demo@localhost:55432/ledger_demo" \
+  DEMO_ADMIN_PASSWORD="pick-a-private-password" \
   python3 scripts/seed_demo.py
 
 DATABASE_URL="postgresql://postgres:demo@localhost:55432/ledger_demo" \
@@ -76,10 +78,15 @@ DATABASE_URL="postgresql://postgres:demo@localhost:55432/ledger_demo" \
 
 | Login | Username | Password |
 | --- | --- | --- |
-| Administrator | `admin` | `Demo@1234` |
-| Editor | `editor` | `Demo@1234` |
-| City-bound editor (NORTHVALE only) | `editor.northvale` | `Demo@1234` |
 | Viewer (read-only) | `viewer` | `Demo@1234` |
+
+Write access is deliberately not public: only accounts with edit permissions
+can change any data, and the seed script gives every edit-capable account
+(administrator + editors) a **private password** — set `DEMO_ADMIN_PASSWORD`
+(and optionally `DEMO_ADMIN_USERNAME`) in the environment before seeding, or
+let the script generate a random one, printed once at the end of the seed run.
+Logins are rate-limited per username **and** per source IP, so the private
+credentials can't be brute-forced.
 
 ## Deploy
 
